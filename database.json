@@ -1,0 +1,75 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "serverName": {
+      "type": "string",
+      "metadata": {
+        "description": "Armserver"
+      }
+    },
+    "administratorLogin": {
+      "type": "string",
+      "metadata": {
+        "description": "Server admin login"
+      }
+    },
+    "administratorLoginPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Server admin login password"
+      }
+    },
+    "databaseName": {
+      "type": "string",
+      "metadata": {
+        "description": "ArmDB"
+      }
+    }
+  },
+  "variables": {},
+  "resources": [
+    {
+      "type": "Microsoft.DBforPostgreSQL/servers",
+      "apiVersion": "2017-12-01",
+      "name": "[parameters('serverName')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "sslEnforcement": "Enabled",
+        "administratorLogin": "[parameters('administratorLogin')]",
+        "administratorLoginPassword": "[parameters('administratorLoginPassword')]"
+      },
+      "resources": [
+        {
+          "name": "firewallRules",
+          "type": "firewallRules",
+          "apiVersion": "2017-12-01",
+          "dependsOn": [
+            "[concat('Microsoft.DBforPostgreSQL/servers/', parameters('serverName'))]"
+          ],
+          "properties": {
+            "startIpAddress": "0.0.0.0",
+            "endIpAddress": "255.255.255.255"
+          }
+        }
+      ]
+    },
+    {
+      "type": "Microsoft.DBforPostgreSQL/servers/databases",
+      "apiVersion": "2017-12-01",
+      "name": "[concat(parameters('serverName'), '/', parameters('databaseName'))]",
+      "dependsOn": [
+        "[concat('Microsoft.DBforPostgreSQL/servers/', parameters('serverName'))]"
+      ],
+      "properties": {
+        "charset": "UTF8"
+      }
+    }
+  ],
+  "outputs": {
+    "serverFQDN": {
+      "type": "string",
+      "value": "[reference(parameters('serverName')).fullyQualifiedDomainName]"
+    }
+  }
+}
